@@ -6,25 +6,28 @@ import (
 	"time"
 )
 
+type Char struct {
+	Name  string
+	Power int
+}
+
 func printChars(c []*Char) {
-	fmt.Printf("\nFinal result:\n")
+	fmt.Printf("Final result:\n")
 	for _, v := range c {
 		fmt.Printf("%s: %d\n", v.Name, v.Power)
 	}
 	fmt.Println("---")
 }
 
-type Char struct {
-	Name  string
-	Power int
-}
-
-func (c *Char) IncrementKi(ctx context.Context, ch chan bool) {
+func (c *Char) IncrementKi(ctx context.Context, cancel context.CancelFunc) {
+	defer cancel()
 	for {
-		if ctx.Err() == nil {
+		select {
+		case <-ctx.Done():
+			return
+		default:
 			c.Power++
 			if c.Power >= 8000 {
-				ch <- true
 				return
 			}
 		}
@@ -33,7 +36,7 @@ func (c *Char) IncrementKi(ctx context.Context, ch chan bool) {
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
-	ch := make(chan bool)
+	defer cancel()
 
 	chars := []*Char{
 		{Name: "Goku"},
@@ -41,11 +44,9 @@ func main() {
 		{Name: "Vegeta"},
 	}
 	for _, v := range chars {
-		go v.IncrementKi(ctx, ch)
+		go v.IncrementKi(ctx, cancel)
 	}
-
-	<-ch
-	cancel()
+	<-ctx.Done()
 
 	printChars(chars)
 	time.Sleep(time.Second) // ensure no one is still increasing ki

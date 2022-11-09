@@ -1,2 +1,2 @@
-# meli-dojos
-ASD dojos
+# meli-dojo
+ASD dojo
